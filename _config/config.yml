@@ -1,0 +1,12 @@
+---
+Name: scstripeconfig
+---
+SilverStripe\Omnipay\Service\PurchaseService:
+  extensions:
+    - SilverCommerce\StripePaymentIntents\Extensions\PurchaseServiceExtension
+SilverCommerce\Checkout\Control\Checkout:
+  extensions:
+    - SilverCommerce\StripePaymentIntents\Extensions\StripeCheckout
+SilverStripe\Omnipay\Model\Payment:
+  extensions:
+    - SilverCommerce\StripePaymentIntents\Extensions\StripePayment
