@@ -1,24 +1,108 @@
-function stripeTokenHandler(token) {
-    // Insert the token ID into the form so it gets submitted to the server
+function registerElements(elements, stripe) {
     var form = document.getElementById('Form_PaymentForm');
-    var hiddenInput = document.getElementById('token');
-    hiddenInput.setAttribute('value', token.id);
-    form.submit();
+    var pay_button = document.getElementById('Form_PaymentForm_action_doSubmitPayment')
+
+    function enablePayButton() {
+        pay_button.removeAttribute('disabled');
+    }
+
+    function disablePayButton() {
+        pay_button.setAttribute('disabled', true);
+    }
+
+    function triggerBrowserValidation() {
+        // The only way to trigger HTML5 form validation UI is to fake a user submit
+        // event.
+        var submit = document.createElement('input');
+        submit.type = 'submit';
+        submit.style.display = 'none';
+        form.appendChild(submit);
+        submit.click();
+        submit.remove();
+    }
+
+    // Check if the stripe form valid, if so, enable payment button
+    window.setInterval(
+        function() {
+            var complete_elements = form.querySelectorAll(".stripe-field-container.StripeElement--complete");
+            
+            if (complete_elements.length === 3) {
+                enablePayButton();
+            } else {
+                disablePayButton();
+            }
+        },
+        1
+    );
+
+    // Listen on the form's 'submit' handler...
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Trigger HTML5 validation UI on the form if any of the inputs fail
+        // validation.
+        var plainInputsValid = true;
+        Array.prototype.forEach.call(
+            form.querySelectorAll('input'),
+            function(input) {
+                if (input.checkValidity && !input.checkValidity()) {
+                    plainInputsValid = false;
+                    return;
+                }
+            }
+        );
+
+        if (!plainInputsValid) {
+            triggerBrowserValidation();
+            return;
+        }
+
+        // Gather additional customer data we may have collected in our form.
+        var cardholdername = document.getElementById('cardholder-name');
+        var cardholderemail = document.getElementById('cardholder-email');
+        var cardholderlineone = document.getElementById('cardholder-lineone');
+        var cardholderzip = document.getElementById('cardholder-zip');
+
+        // Use Stripe.js to create a token. We only need to pass in one Element
+        // from the Element group in order to create a token. We can also pass
+        // in the additional customer data we collected in our form.
+        stripe
+            .createPaymentMethod({
+                type: 'card',
+                card: elements[0],
+                billing_details: {
+                    name: cardholdername.value,
+                    email: cardholderemail.value,
+                    address: {
+                        "line1": cardholderlineone.value,
+                        "postal_code": cardholderzip.value
+                    }
+                }
+            }).then(function(result) {
+                if (result.error) {
+                    disablePayButton();
+                } else {
+                    document.getElementById('paymentMethod').value = result.paymentMethod.id;
+                    form.submit();
+                }
+            });
+    });
+
+    disablePayButton();
 }
 
 window.onload = function() {
-    // Create a Stripe client.
+    // Create a Stripe client and an instance of elements
     var stripe = Stripe(stripe_pk);
-
-    // Create an instance of Elements.
     var elements = stripe.elements();
 
     // Custom styling can be passed to options when creating an Element.
     // (Note that this demo uses a wider set of styles than the guide below.)
     var style = {
         base: {
-            color: '#32325d',
+            color: '#000000',
             fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+            fontSize: '16px',
             fontSmoothing: 'antialiased'
         },
         invalid: {
@@ -27,44 +111,14 @@ window.onload = function() {
         }
     };
 
-    // Create an instance of the card Element.
-    var card = elements.create('card', {style: style});
+    var cardNumber = elements.create('cardNumber', {style: style});
+    cardNumber.mount('#stripe-card-number');
 
-    // Add an instance of the card Element into the `card-element` <div>.
-    card.mount('#card-element');
+    var cardExpiry = elements.create('cardExpiry', {style: style});
+    cardExpiry.mount('#stripe-card-expiry');
 
-    // Handle real-time validation errors from the card Element.
-    card.addEventListener('change', function(event) {
-        var displayError = document.getElementById('card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
-    });
+    var cardCvc = elements.create('cardCvc', {style: style});
+    cardCvc.mount('#stripe-card-cvc');
 
-    // Handle form submission.
-    var form = document.getElementById('Form_PaymentForm');
-    var cardholderName = document.getElementById('cardholder-name');
-    var cardholderEmail = document.getElementById('cardholder-email');
-    var cardButton = document.getElementById('card-button');
-    
-    form.addEventListener('submit', function(ev) {
-      ev.preventDefault();
-      stripe.createPaymentMethod('card', card, {
-        billing_details: {
-            name: cardholderName.value,
-            email: cardholderEmail.value
-        }
-      }).then(function(result) {
-        if (result.error) {
-          // Show error in payment form
-        } else {
-          // Otherwise send paymentMethod.id to your server (see Step 2)
-          document.getElementById('paymentMethod').value = result.paymentMethod.id;
-          form.submit();
-        }
-      });
-    });
-    
+    registerElements([cardNumber, cardExpiry, cardCvc], stripe);
 }

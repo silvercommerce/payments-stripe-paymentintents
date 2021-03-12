@@ -9,7 +9,6 @@ use SilverStripe\View\Requirements;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Omnipay\GatewayInfo;
-use SilverStripe\SiteConfig\SiteConfig;
 
 class StripeCheckout extends Extension
 {
@@ -40,13 +39,20 @@ class StripeCheckout extends Extension
 
             $publishableKey = $stripeInfo['parameters']['publishableKey'];
             Requirements::javascript('https://js.stripe.com/v3/');
-            Requirements::javascript("silvercommerce/payments-stripe-paymentintents:client/dist/js/stripe.min.js");
+            Requirements::javascript("silvercommerce/payments-stripe-paymentintents:client/dist/js/stripe.js");
             Requirements::customScript("var stripe_pk = '{$publishableKey}'");
 
             $fields = $form->Fields();
             foreach ($fields as $field) {
                 $fields->remove($field);
             }
+
+            $stripe_fields = LiteralField::create(
+                'StripeFields',
+                $this->getOwner()->renderWith('SilverCommerce\StripePaymentIntents\StripeCheckout_PaymentFields')
+            );
+
+            $fields->push(HiddenField::create('token'));
             $fields->push(
                 HiddenField::create('cardholder-name')->setValue($estimate->DeliveryFirstName.' '.$estimate->DeliverySurname)
             );
@@ -54,17 +60,15 @@ class StripeCheckout extends Extension
                 HiddenField::create('cardholder-email')->setValue($estimate->Email)
             );
             $fields->push(
-                LiteralField::create('card-element', '<div id="card-element"></div>')
+                HiddenField::create('cardholder-lineone')->setValue($estimate->Address1)
             );
             $fields->push(
-                LiteralField::create(
-                    'card-alerts',
-                    '<div id="card-errors" role="alert"></div>'
-                )
+                HiddenField::create('cardholder-zip')->setValue($estimate->PostCode)
             );
             $fields->push(
                 HiddenField::create("paymentMethod")
             );
+            $fields->push($stripe_fields);
         }
     }
 
