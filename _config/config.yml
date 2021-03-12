@@ -9,4 +9,4 @@ SilverCommerce\Checkout\Control\Checkout:
     - SilverCommerce\StripePaymentIntents\Extensions\StripeCheckout
 SilverStripe\Omnipay\Model\Payment:
   extensions:
-    - SilverCommerce\StripePaymentIntents\Extensions\StripePayment
+    - Silvercommerce\StripePaymentIntents\Extensions\StripePayment
