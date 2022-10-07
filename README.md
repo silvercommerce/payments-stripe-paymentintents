@@ -23,7 +23,7 @@ _payments.yml_
         - 'Stripe_PaymentIntents'
 
     SilverStripe\Omnipay\GatewayInfo:
-      PayPal_Express:
+      Stripe_PaymentIntents:
         parameters:
             apikey: sk_live_xxxxxxxxx
             publishableKey: pk_live_xxxxxxxxx
