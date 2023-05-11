@@ -10,3 +10,7 @@ Initial release
 * Add better validation logic
 * Split stripe form out into template
 * Pass name, email and address details along with payment token
+
+## 1.0.2
+
+* Remove guzzle as a hard requirement
