@@ -14,3 +14,7 @@ Initial release
 ## 1.0.2
 
 * Remove guzzle as a hard requirement
+
+## 1.1.0
+
+* SS5 support
